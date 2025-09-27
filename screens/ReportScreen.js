@@ -5,8 +5,10 @@ import {
     StyleSheet,
     FlatList,
     TouchableOpacity,
-    Alert
+    Alert,
+    Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -159,44 +161,50 @@ const ReportScreen = () => {
     );
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.headerTitleContainer}>
-                    <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={COLORS.primary} />
-                    <Text style={styles.headerText}>Histórico de Cálculos</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                <View style={[styles.header, { marginTop: Platform.OS === 'android' ? 32 : 0 }]}>
+                    <View style={styles.headerTitleContainer}>
+                        <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={COLORS.primary} />
+                        <Text style={styles.headerText}>Histórico de Cálculos</Text>
+                    </View>
+
+                    {calculations.length > 0 && (
+                        <TouchableOpacity
+                            style={styles.clearHistoryButton}
+                            onPress={clearHistory}
+                        >
+                            <MaterialIcons name="delete-sweep" size={20} color={COLORS.error} />
+                            <Text style={styles.clearHistoryText}>Limpar</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                {calculations.length > 0 && (
-                    <TouchableOpacity
-                        style={styles.clearHistoryButton}
-                        onPress={clearHistory}
-                    >
-                        <MaterialIcons name="delete-sweep" size={20} color={COLORS.error} />
-                        <Text style={styles.clearHistoryText}>Limpar</Text>
-                    </TouchableOpacity>
+                {calculations.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <MaterialCommunityIcons name="history" size={70} color={COLORS.borderLight} />
+                        <Text style={styles.emptyText}>Nenhum cálculo no histórico</Text>
+                        <Text style={styles.emptySubText}>Os cálculos realizados aparecerão aqui</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={calculations}
+                        keyExtractor={(item) => item.id}
+                        renderItem={renderCalculationItem}
+                        contentContainerStyle={styles.listContainer}
+                        showsVerticalScrollIndicator={false}
+                    />
                 )}
             </View>
-
-            {calculations.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <MaterialCommunityIcons name="history" size={70} color={COLORS.borderLight} />
-                    <Text style={styles.emptyText}>Nenhum cálculo no histórico</Text>
-                    <Text style={styles.emptySubText}>Os cálculos realizados aparecerão aqui</Text>
-                </View>
-            ) : (
-                <FlatList
-                    data={calculations}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderCalculationItem}
-                    contentContainerStyle={styles.listContainer}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
-        </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: COLORS.background,
+    },
     container: {
         flex: 1,
         backgroundColor: COLORS.background,

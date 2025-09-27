@@ -6,7 +6,8 @@ import {
     ScrollView,
     Linking,
     TouchableOpacity,
-    Image
+    Image,
+    Platform
 } from 'react-native';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import Logo from '../components/Logo';
@@ -28,7 +29,7 @@ const AboutScreen = () => {
                 <Text style={styles.version}>Versão {appVersion}</Text>
             </View>
             <View style={styles.card}>
-                <View style={styles.cardHeader}>
+                <View style={[styles.cardHeader, { marginTop: Platform.OS === 'android' ? 32 : 0 }]}>
                     <MaterialCommunityIcons name="information-outline" size={24} color={COLORS.primary} />
                     <Text style={styles.cardTitle}>Sobre o Aplicativo</Text>
                 </View>

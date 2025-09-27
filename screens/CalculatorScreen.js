@@ -9,8 +9,11 @@ import {
     Keyboard,
     Alert,
     FlatList,
-    Modal
+    Modal,
+    Platform
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import Logo from '../components/Logo';
@@ -139,10 +142,47 @@ const CalculatorScreen = ({ navigation }) => {
 
     const saveCalculation = async (calculationResult) => {
         try {
-            // Salva o cálculo no AsyncStorage
-            // ...implementar depois...
+            // Gerar um ID único para o cálculo
+            const calculationId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+
+            const calculationToSave = {
+                id: calculationId,
+                wellName: calculationResult.wellName,
+                distance: calculationResult.distance,
+                pipeType: calculationResult.pipeType,
+                operationType: calculationResult.operationType,
+                volumeLiters: calculationResult.volumeInLiters,
+                volumeBBL: calculationResult.volumeInBarrels,
+                date: calculationResult.date
+            };
+
+            // Recuperar cálculos existentes
+            const existingCalculationsJSON = await AsyncStorage.getItem('calculations');
+            let calculations = [];
+
+            if (existingCalculationsJSON) {
+                calculations = JSON.parse(existingCalculationsJSON);
+            }
+
+            // Adicionar o novo cálculo
+            calculations.unshift(calculationToSave); // Adiciona no início da lista
+
+            // Limitar a 50 cálculos no histórico
+            if (calculations.length > 50) {
+                calculations = calculations.slice(0, 50);
+            }
+
+            // Salvar de volta no AsyncStorage
+            await AsyncStorage.setItem('calculations', JSON.stringify(calculations));
+
+            console.log('Cálculo salvo com sucesso:', calculationToSave);
         } catch (error) {
-            // ...implementar depois...
+            console.error('Erro ao salvar cálculo:', error);
+            Alert.alert(
+                'Aviso',
+                'Cálculo realizado, mas não foi possível salvar no histórico.',
+                [{ text: 'OK' }]
+            );
         }
     };
 
@@ -157,214 +197,220 @@ const CalculatorScreen = ({ navigation }) => {
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <View style={styles.logoContainer}>
-                <Logo size="large" horizontal={true} />
-            </View>
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView contentContainerStyle={styles.container}>
+                <View style={[styles.logoContainer, { marginTop: Platform.OS === 'android' ? 32 : 0 }]}>
+                    <Logo size="large" horizontal={true} />
+                </View>
 
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Dados da Operação</Text>
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Dados da Operação</Text>
 
-                <View style={styles.inputContainer}>
-                    <Text style={styles.label}>
-                        <MaterialCommunityIcons name="barrel" size={18} color={COLORS.primary} /> Nome do Poço:
-                    </Text>
-                    <View style={styles.wellInputContainer}>
-                        <TextInput
-                            style={[styles.input, showSuggestions && styles.inputWithSuggestions]}
-                            placeholder="Digite o nome do poço (ex: PIR-01)"
-                            value={wellName}
-                            onChangeText={handleWellNameChange}
-                            placeholderTextColor={COLORS.textLight}
-                            onFocus={() => {
-                                if (wellName.trim().length >= 2 && wellSuggestions.length > 0) {
-                                    setShowSuggestions(true);
-                                }
-                            }}
-                        />
-                        {isSearching && (
-                            <View style={styles.searchingIndicator}>
-                                <MaterialIcons name="search" size={16} color={COLORS.primary} />
-                            </View>
-                        )}
-
-                        {/* Modal para sugestões */}
-                        <Modal
-                            visible={showSuggestions}
-                            transparent={true}
-                            animationType="fade"
-                            onRequestClose={() => setShowSuggestions(false)}
-                        >
-                            <TouchableOpacity
-                                style={styles.modalOverlay}
-                                activeOpacity={1}
-                                onPress={() => setShowSuggestions(false)}
-                            >
-                                <View style={styles.suggestionsContainer}>
-                                    <View style={styles.suggestionsHeader}>
-                                        <Text style={styles.suggestionsTitle}>Poços Encontrados</Text>
-                                        <TouchableOpacity
-                                            onPress={() => setShowSuggestions(false)}
-                                            style={styles.closeButton}
-                                        >
-                                            <MaterialIcons name="close" size={20} color={COLORS.textSecondary} />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <FlatList
-                                        data={wellSuggestions}
-                                        keyExtractor={(item, index) => `${item.de}-${index}`}
-                                        renderItem={({ item }) => (
-                                            <TouchableOpacity
-                                                style={styles.suggestionItem}
-                                                onPress={() => selectWell(item)}
-                                            >
-                                                <View style={styles.suggestionContent}>
-                                                    <Text style={styles.suggestionWellName}>{item.de}</Text>
-                                                    <Text style={styles.suggestionDetails}>
-                                                        Para: {item.para} | Diâm: {item.diam}" | Comp: {item.comp}m
-                                                    </Text>
-                                                </View>
-                                                <MaterialIcons name="arrow-forward" size={16} color={COLORS.primary} />
-                                            </TouchableOpacity>
-                                        )}
-                                        style={styles.suggestionsList}
-                                        showsVerticalScrollIndicator={false}
-                                    />
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>
+                            <MaterialCommunityIcons name="barrel" size={18} color={COLORS.primary} /> Nome do Poço:
+                        </Text>
+                        <View style={styles.wellInputContainer}>
+                            <TextInput
+                                style={[styles.input, showSuggestions && styles.inputWithSuggestions]}
+                                placeholder="Digite o nome do poço (ex: PIR-01)"
+                                value={wellName}
+                                onChangeText={handleWellNameChange}
+                                placeholderTextColor={COLORS.textLight}
+                                onFocus={() => {
+                                    if (wellName.trim().length >= 2 && wellSuggestions.length > 0) {
+                                        setShowSuggestions(true);
+                                    }
+                                }}
+                            />
+                            {isSearching && (
+                                <View style={styles.searchingIndicator}>
+                                    <MaterialIcons name="search" size={16} color={COLORS.primary} />
                                 </View>
-                            </TouchableOpacity>
-                        </Modal>
+                            )}
+
+                            {/* Modal para sugestões */}
+                            <Modal
+                                visible={showSuggestions}
+                                transparent={true}
+                                animationType="fade"
+                                onRequestClose={() => setShowSuggestions(false)}
+                            >
+                                <TouchableOpacity
+                                    style={styles.modalOverlay}
+                                    activeOpacity={1}
+                                    onPress={() => setShowSuggestions(false)}
+                                >
+                                    <View style={styles.suggestionsContainer}>
+                                        <View style={styles.suggestionsHeader}>
+                                            <Text style={styles.suggestionsTitle}>Poços Encontrados</Text>
+                                            <TouchableOpacity
+                                                onPress={() => setShowSuggestions(false)}
+                                                style={styles.closeButton}
+                                            >
+                                                <MaterialIcons name="close" size={20} color={COLORS.textSecondary} />
+                                            </TouchableOpacity>
+                                        </View>
+                                        <FlatList
+                                            data={wellSuggestions}
+                                            keyExtractor={(item, index) => `${item.de}-${index}`}
+                                            renderItem={({ item }) => (
+                                                <TouchableOpacity
+                                                    style={styles.suggestionItem}
+                                                    onPress={() => selectWell(item)}
+                                                >
+                                                    <View style={styles.suggestionContent}>
+                                                        <Text style={styles.suggestionWellName}>{item.de}</Text>
+                                                        <Text style={styles.suggestionDetails}>
+                                                            Para: {item.para} | Diâm: {item.diam}" | Comp: {item.comp}m
+                                                        </Text>
+                                                    </View>
+                                                    <MaterialIcons name="arrow-forward" size={16} color={COLORS.primary} />
+                                                </TouchableOpacity>
+                                            )}
+                                            style={styles.suggestionsList}
+                                            showsVerticalScrollIndicator={false}
+                                        />
+                                    </View>
+                                </TouchableOpacity>
+                            </Modal>
+                        </View>
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>
+                            <MaterialIcons name="straighten" size={18} color={COLORS.primary} /> Distância (Metros):
+                        </Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Digite a distância"
+                            keyboardType="numeric"
+                            value={distance}
+                            onChangeText={setDistance}
+                            placeholderTextColor={COLORS.textLight}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>
+                            <MaterialCommunityIcons name="pipe" size={18} color={COLORS.primary} /> Diâmetro do Tubo:
+                        </Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedPipe}
+                                onValueChange={(itemValue) => setSelectedPipe(itemValue)}
+                                style={styles.picker}
+                                dropdownIconColor={COLORS.primary}
+                            >
+                                <Picker.Item label="Selecione o diâmetro do tubo" value="" color={COLORS.textLight} />
+                                <Picker.Item label="Tubo (2 3/8)" value="1" color={COLORS.text} />
+                                <Picker.Item label="Tubo (2 7/8)" value="2" color={COLORS.text} />
+                                <Picker.Item label="Tubo (3 1/2)" value="3" color={COLORS.text} />
+                            </Picker>
+                        </View>
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>
+                            <MaterialCommunityIcons name="wrench" size={18} color={COLORS.primary} /> Tipo de Operação:
+                        </Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={selectedOperation}
+                                onValueChange={(itemValue) => setSelectedOperation(itemValue)}
+                                style={styles.picker}
+                                dropdownIconColor={COLORS.primary}
+                            >
+                                <Picker.Item label="Selecione o tipo de operação" value="" color={COLORS.textLight} />
+                                <Picker.Item label="Desparafinação Térmica" value="1" color={COLORS.text} />
+                                <Picker.Item label="Passagem de Pig" value="2" color={COLORS.text} />
+                                <Picker.Item label="Desparafinação Térmica e Passagem de Pig" value="3" color={COLORS.text} />
+                                <Picker.Item label="Preenchimento de Linha de produção" value="4" color={COLORS.text} />
+                                <Picker.Item label="Preenchimento de coluna" value="5" color={COLORS.text} />
+                                <Picker.Item label="Teste de estanquidade" value="6" color={COLORS.text} />
+                                <Picker.Item label="Teste hidrostático" value="7" color={COLORS.text} />
+                            </Picker>
+                        </View>
+                    </View>
+
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity style={styles.calculateButton} onPress={calculateVolume}>
+                            <MaterialCommunityIcons name="calculator" size={20} color="white" />
+                            <Text style={styles.buttonText}>Calcular Volume</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.clearButton} onPress={clearFields}>
+                            <MaterialIcons name="clear" size={20} color={COLORS.text} />
+                            <Text style={[styles.buttonText, { color: COLORS.text }]}>Limpar Campos</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
-                <View style={styles.inputContainer}>
-                    <Text style={styles.label}>
-                        <MaterialIcons name="straighten" size={18} color={COLORS.primary} /> Distância (Metros):
+                {result && (
+                    <View style={styles.resultCard}>
+                        <View style={styles.resultHeader}>
+                            <MaterialCommunityIcons name="check-circle" size={24} color={COLORS.success} />
+                            <Text style={styles.resultTitle}>Resultado do Cálculo</Text>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        <View style={styles.resultInfo}>
+                            <View style={styles.resultRow}>
+                                <Text style={styles.resultLabel}>Poço:</Text>
+                                <Text style={styles.resultValue}>{result.wellName}</Text>
+                            </View>
+                            <View style={styles.resultRow}>
+                                <Text style={styles.resultLabel}>Distância:</Text>
+                                <Text style={styles.resultValue}>{result.distance}m</Text>
+                            </View>
+                            <View style={styles.resultRow}>
+                                <Text style={styles.resultLabel}>Tubo:</Text>
+                                <Text style={styles.resultValue}>{result.pipeType}</Text>
+                            </View>
+                            <View style={styles.resultRow}>
+                                <Text style={styles.resultLabel}>Operação:</Text>
+                                <Text style={styles.resultValue}>{result.operationType}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.volumeResults}>
+                            <View style={styles.volumeItem}>
+                                <MaterialCommunityIcons name="barrel" size={32} color={COLORS.primary} />
+                                <Text style={styles.volumeValue}>{result.volumeInLiters}</Text>
+                                <Text style={styles.volumeUnit}>LITROS</Text>
+                            </View>
+
+                            <View style={styles.volumeDivider} />
+
+                            <View style={styles.volumeItem}>
+                                <MaterialCommunityIcons name="oil-barrel" size={32} color={COLORS.primary} />
+                                <Text style={styles.volumeValue}>{result.volumeInBarrels}</Text>
+                                <Text style={styles.volumeUnit}>BARRIS</Text>
+                            </View>
+                        </View>
+
+                        <Text style={styles.calculationDate}>
+                            Calculado em: {result.date}
+                        </Text>
+                    </View>
+                )}
+
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>
+                        Desenvolvido para otimização de operações petrolíferas
                     </Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Digite a distância"
-                        keyboardType="numeric"
-                        value={distance}
-                        onChangeText={setDistance}
-                        placeholderTextColor={COLORS.textLight}
-                    />
                 </View>
-
-                <View style={styles.inputContainer}>
-                    <Text style={styles.label}>
-                        <MaterialCommunityIcons name="pipe" size={18} color={COLORS.primary} /> Diâmetro do Tubo:
-                    </Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={selectedPipe}
-                            onValueChange={(itemValue) => setSelectedPipe(itemValue)}
-                            style={styles.picker}
-                            dropdownIconColor={COLORS.primary}
-                        >
-                            <Picker.Item label="Selecione o diâmetro do tubo" value="" color={COLORS.textLight} />
-                            <Picker.Item label="Tubo (2 3/8)" value="1" color={COLORS.text} />
-                            <Picker.Item label="Tubo (2 7/8)" value="2" color={COLORS.text} />
-                            <Picker.Item label="Tubo (3 1/2)" value="3" color={COLORS.text} />
-                        </Picker>
-                    </View>
-                </View>
-
-                <View style={styles.inputContainer}>
-                    <Text style={styles.label}>
-                        <MaterialCommunityIcons name="wrench" size={18} color={COLORS.primary} /> Tipo de Operação:
-                    </Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={selectedOperation}
-                            onValueChange={(itemValue) => setSelectedOperation(itemValue)}
-                            style={styles.picker}
-                            dropdownIconColor={COLORS.primary}
-                        >
-                            <Picker.Item label="Selecione o tipo de operação" value="" color={COLORS.textLight} />
-                            <Picker.Item label="Desparafinação Térmica" value="1" color={COLORS.text} />
-                            <Picker.Item label="Passagem de Pig" value="2" color={COLORS.text} />
-                            <Picker.Item label="Desparafinação Térmica e Passagem de Pig" value="3" color={COLORS.text} />
-                            <Picker.Item label="Preenchimento de Linha de produção" value="4" color={COLORS.text} />
-                            <Picker.Item label="Preenchimento de coluna" value="5" color={COLORS.text} />
-                            <Picker.Item label="Teste de estanquidade" value="6" color={COLORS.text} />
-                            <Picker.Item label="Teste hidrostático" value="7" color={COLORS.text} />
-                        </Picker>
-                    </View>
-                </View>
-
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.calculateButton} onPress={calculateVolume}>
-                        <MaterialCommunityIcons name="calculator" size={20} color="white" />
-                        <Text style={styles.buttonText}>Calcular Volume</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.clearButton} onPress={clearFields}>
-                        <MaterialIcons name="clear" size={20} color={COLORS.text} />
-                        <Text style={[styles.buttonText, { color: COLORS.text }]}>Limpar Campos</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {result && (
-                <View style={styles.resultCard}>
-                    <View style={styles.resultHeader}>
-                        <MaterialCommunityIcons name="check-circle" size={24} color={COLORS.success} />
-                        <Text style={styles.resultTitle}>Resultado do Cálculo</Text>
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.resultInfo}>
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>Poço:</Text>
-                            <Text style={styles.resultValue}>{result.wellName}</Text>
-                        </View>
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>Distância:</Text>
-                            <Text style={styles.resultValue}>{result.distance}m</Text>
-                        </View>
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>Tubo:</Text>
-                            <Text style={styles.resultValue}>{result.pipeType}</Text>
-                        </View>
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>Operação:</Text>
-                            <Text style={styles.resultValue}>{result.operationType}</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.volumeResults}>
-                        <View style={styles.volumeItem}>
-                            <MaterialCommunityIcons name="barrel" size={32} color={COLORS.primary} />
-                            <Text style={styles.volumeValue}>{result.volumeInLiters}</Text>
-                            <Text style={styles.volumeUnit}>LITROS</Text>
-                        </View>
-
-                        <View style={styles.volumeDivider} />
-
-                        <View style={styles.volumeItem}>
-                            <MaterialCommunityIcons name="oil-barrel" size={32} color={COLORS.primary} />
-                            <Text style={styles.volumeValue}>{result.volumeInBarrels}</Text>
-                            <Text style={styles.volumeUnit}>BARRIS</Text>
-                        </View>
-                    </View>
-
-                    <Text style={styles.calculationDate}>
-                        Calculado em: {result.date}
-                    </Text>
-                </View>
-            )}
-
-            <View style={styles.footer}>
-                <Text style={styles.footerText}>
-                    Desenvolvido para otimização de operações petrolíferas
-                </Text>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: COLORS.background,
+    },
     container: {
         flexGrow: 1,
         padding: SPACING.md,

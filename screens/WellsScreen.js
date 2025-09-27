@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllWells, searchWells as searchWellsDB } from '../services/database';
@@ -81,7 +81,7 @@ export default function WellsScreen({ navigation }) {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { marginTop: Platform.OS === 'android' ? 32 : 0 }]}>
                 <View style={styles.headerLeft}>
                     <MaterialIcons name="oil-barrel" size={32} color="#007bff" />
                     <View style={styles.headerTextContainer}>
@@ -91,12 +91,7 @@ export default function WellsScreen({ navigation }) {
                         </Text>
                     </View>
                 </View>
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => navigation.navigate('AddWell')}
-                >
-                    <MaterialIcons name="add" size={24} color="white" />
-                </TouchableOpacity>
+                {/* Botão de cadastro removido */}
             </View>
 
             {/* Campo de busca */}
@@ -171,22 +166,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6c757d',
         marginTop: 4,
-    },
-    addButton: {
-        backgroundColor: '#007bff',
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
     },
     searchContainer: {
         flexDirection: 'row',
