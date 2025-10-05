@@ -43,7 +43,6 @@ export const initDatabase = async () => {
             );
         `);
 
-        console.log('Banco de dados inicializado com sucesso');
         return database;
     } catch (error) {
         console.error('Erro ao criar tabelas:', error);
@@ -61,7 +60,6 @@ export const seedWellsData = async (wellsData) => {
         const count = result.count;
 
         if (count === 0) {
-            console.log('Populando banco com dados dos poços...');
 
             // Inserir dados dos poços
             for (const well of wellsData) {
@@ -71,7 +69,6 @@ export const seedWellsData = async (wellsData) => {
                 );
             }
 
-            console.log(`${wellsData.length} poços inseridos no banco de dados`);
         }
     } catch (error) {
         console.error('Erro ao popular dados dos poços:', error);
@@ -186,7 +183,6 @@ export const addWell = async (wellData) => {
             [wellData.de, wellData.para, wellData.diam, wellData.comp]
         );
 
-        console.log(`Poço ${wellData.de} adicionado com sucesso`);
         return result;
     } catch (error) {
         console.error('Erro ao adicionar poço:', error);
@@ -207,7 +203,6 @@ export const updateWell = async (id, wellData) => {
             throw new Error('Poço não encontrado');
         }
 
-        console.log(`Poço ID ${id} atualizado com sucesso`);
         return result;
     } catch (error) {
         console.error('Erro ao atualizar poço:', error);
@@ -225,7 +220,6 @@ export const deleteWell = async (id) => {
             throw new Error('Poço não encontrado');
         }
 
-        console.log(`Poço ID ${id} deletado com sucesso`);
         return result;
     } catch (error) {
         console.error('Erro ao deletar poço:', error);

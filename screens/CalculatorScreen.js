@@ -175,7 +175,6 @@ const CalculatorScreen = ({ navigation }) => {
             // Salvar de volta no AsyncStorage
             await AsyncStorage.setItem('calculations', JSON.stringify(calculations));
 
-            console.log('Cálculo salvo com sucesso:', calculationToSave);
         } catch (error) {
             console.error('Erro ao salvar cálculo:', error);
             Alert.alert(

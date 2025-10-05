@@ -2,6 +2,11 @@
   "expo": {
     "name": "calcvolApp",
     "slug": "calcvolApp",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "e127d855-f33a-4bd3-b69b-66c33f3eb6fd"
+      }
+    }
   }
 }
